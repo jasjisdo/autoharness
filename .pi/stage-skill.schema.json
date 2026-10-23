@@ -1,0 +1,35 @@
+{
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": ["create", "update", "patch", "remove_file", "delete"],
+      "description": "create=new (with level) / update=replace whole file / patch=small edit (delta) / remove_file=drop one subfile / delete=remove the whole skill"
+    },
+    "name": { "type": "string", "description": "skill symbol name" },
+    "level": {
+      "type": "string",
+      "enum": ["global", "project"],
+      "description": "create only; defaults to project, global has a high bar"
+    },
+    "body": { "type": "string", "description": "create/update: full SKILL.md text" },
+    "old_string": { "type": "string", "description": "patch: text to replace (must match the live copy uniquely)" },
+    "new_string": { "type": "string", "description": "patch: replacement text" },
+    "reason": { "type": "string", "description": "LED: why the change (required)" },
+    "evidence": { "type": "string", "description": "LED: triggering evidence slice (required)" },
+    "files": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "create/update only: subfiles as relative path -> content, under scripts/|templates/|assets/|references/; each must be referenced by its relative path in the SKILL.md body"
+    },
+    "path": {
+      "type": "string",
+      "description": "remove_file only: relative path of the subfile to remove; the live SKILL.md must no longer reference it (patch the pointer out first)"
+    },
+    "absorbed_into": {
+      "type": "string",
+      "description": "delete only: the umbrella skill that absorbed this one's content (empty/omitted = pure retirement). The promoter verifies the umbrella actually exists — a hallucinated name rejects the whole intent"
+    }
+  },
+  "required": ["action", "name", "reason", "evidence"]
+}

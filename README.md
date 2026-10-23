@@ -1,11 +1,11 @@
 <h1 align="center">AutoHarness</h1>
-<p align="center"><strong>Self-Learning Skills for Claude Code</strong></p>
+<p align="center"><strong>Self-Learning Skills for Pi Agent and Claude Code</strong></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftigerless-labs%2Fautoharness%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=release&prefix=v&color=brightgreen" alt="release" /> <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="python" /> <img src="https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey.svg" alt="platform" /> <img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="license MIT" /> <a href="https://repositoryradar.dev/repo/tigerless-labs/autoharness"><img src="https://repositoryradar.dev/badge/tigerless-labs/autoharness.svg" alt="Featured on Repository Radar" /></a>
 </p>
 
-**autoharness is a self-learning skill layer for Claude Code.** It **learns** skills from your real
+**autoharness is a self-learning skill layer for Pi Agent and Claude Code.** It **learns** skills from your real
 sessions, **merges** same-scenario ones instead of stacking near-duplicates, **updates** them in use,
 and **prunes** any that stop getting used — so the layer **stays clean on its own**, **touching only
 the skills it wrote itself**.
@@ -24,6 +24,27 @@ hand every model generation. autoharness bets one slice of it — the skill laye
 | **Evidence kept for later** | Every create/update logs its scenario and decision to a per-skill ledger — the raw material to build a benchmark from real usage if you ever want one. |
 
 ## Install
+
+### Pi Agent (this fork)
+
+Requires Pi 1.4.0+, Node.js 22.19+, and Python 3.11+ on PATH. Install from this fork:
+
+```bash
+pi install git:github.com/jasjisdo/autoharness
+```
+
+Restart Pi or run `/reload`. AutoHarness registers the native `stage_skill` tool, the `/learn`
+command, and the bundled `/skill:learn` skill. It captures Pi activity, reflects in a restricted
+background Pi process, and validates proposals through the existing Python core. No Claude CLI,
+manual MCP configuration, or additional subagent extension is required.
+
+Pi-managed project skills live in `.pi/skills/`; personal skills live in `~/.pi/agent/skills/`
+(or `PI_CODING_AGENT_DIR`). Existing `.claude` skills are left untouched. The sections below
+continue to describe the Claude integration; see the [Pi guide](docs/README.pi.md) for Pi storage,
+configuration, Conda setup, updates, and troubleshooting. The upstream install URL will include
+this integration only if its maintainers merge the changes.
+
+### Claude Code
 
 **Requires Python 3.11+ as the `python3` on your PATH** — autoharness runs entirely as Python
 (zero third-party dependencies); its hooks and MCP server won't fire without it. The hooks resolve
@@ -57,7 +78,7 @@ root: a `.mcp.json` there would also be this checkout's project config, which ou
 same-command server and leaves the reflector without its tool in sessions inside the repo.
 
 
-### Update
+### Update (Claude Code)
 
 Update and uninstall are shown in their terminal form (`claude plugin …`); inside Claude Code the same
 operations live in the `/plugin` menu.
@@ -80,7 +101,7 @@ enable it once: `/plugin` → **Marketplaces** → **autoharness** → **Enable 
 installed copy is cached by the `version` in `plugin.json`; a release reaches users only when that
 field is bumped.
 
-### Uninstall
+### Uninstall (Claude Code)
 
 ```
 claude plugin uninstall autoharness@autoharness

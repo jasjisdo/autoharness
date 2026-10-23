@@ -1,0 +1,29 @@
+{
+  "name": "autoharness",
+  "version": "0.5.3",
+  "description": "Self-learning skills for Pi and Claude Code with deterministic validation and lifecycle management",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jasjisdo/autoharness.git"
+  },
+  "keywords": ["pi-package", "skills", "learning", "autoharness"],
+  "engines": { "node": ">=22.19.0" },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=1.4.0 <2.0.0",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/pi/*.mjs",
+    "check": "tsc --noEmit --module nodenext --moduleResolution nodenext --target es2022 --allowImportingTsExtensions --skipLibCheck .pi/extensions/autoharness.ts"
+  },
+  "pi": {
+    "extensions": ["./.pi/extensions/autoharness.ts"],
+    "skills": ["./skills"]
+  }
+}
