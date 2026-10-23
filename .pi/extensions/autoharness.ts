@@ -35,9 +35,11 @@ function piInvocation(): string[] {
 
 function runBridge(payload: Record<string, unknown>, signal?: AbortSignal): Promise<BridgeResult> {
   return new Promise((resolveResult, reject) => {
-    const child = spawn(process.env.AUTOHARNESS_PYTHON || "python3", ["-m", "autoharness.pi_bridge"], {
+    const environment = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
+      !key.startsWith("AUTOHARNESS_") || key.startsWith("AUTOHARNESS_PI_")));
+    const child = spawn(process.env.AUTOHARNESS_PI_PYTHON || "python3", ["-m", "autoharness.pi_bridge"], {
       cwd: String(payload.cwd),
-      env: { ...process.env, PYTHONPATH: [resolve(packageRoot, "src"), process.env.PYTHONPATH].filter(Boolean).join(delimiter) },
+      env: { ...environment, PYTHONPATH: [resolve(packageRoot, "src"), process.env.PYTHONPATH].filter(Boolean).join(delimiter) },
       stdio: ["pipe", "pipe", "pipe"],
       signal,
     });
@@ -130,7 +132,7 @@ export default function autoharnessPiExtension(pi: ExtensionAPI) {
     },
   });
 
-  if (process.env.AUTOHARNESS_CHILD_SESSION) {
+  if (process.env.AUTOHARNESS_PI_CHILD_SESSION) {
     pi.on("tool_call", async (event) => {
       if (!CHILD_TOOLS.has(event.toolName)) return { block: true, reason: "AutoHarness child sessions may only read and stage skill proposals." };
     });

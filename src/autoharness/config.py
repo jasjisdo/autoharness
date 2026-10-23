@@ -96,6 +96,7 @@ SNAPSHOT_KEEP = _int_env("AUTOHARNESS_SNAPSHOT_KEEP", 5, minimum=0)  # curator p
 # floor 1) bounds how long a notifier can hold a drain — the interactive one runs inside Stop.
 NOTIFY = os.environ.get("AUTOHARNESS_NOTIFY", "").strip().lower()
 NOTIFY_CMD = os.environ.get("AUTOHARNESS_NOTIFY_CMD", "")
+NOTIFY_SUMMARY_ENV = "AUTOHARNESS_NOTIFY_SUMMARY"
 NOTIFY_TIMEOUT_S = max(1, _int_env("AUTOHARNESS_NOTIFY_TIMEOUT_S", 5))
 
 _LIB = Path(__file__).parent / "lib"

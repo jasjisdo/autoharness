@@ -39,7 +39,8 @@ background Pi process, and validates proposals through the existing Python core.
 manual MCP configuration, or additional subagent extension is required.
 
 Pi-managed project skills live in `.pi/skills/`; personal skills live in `~/.pi/agent/skills/`
-(or `PI_CODING_AGENT_DIR`). Existing `.claude` skills are left untouched. The sections below
+(or `PI_CODING_AGENT_DIR`). Existing `.claude` skills are left untouched. Pi settings use the
+separate `AUTOHARNESS_PI_*` namespace; generic `AUTOHARNESS_*` settings remain Claude-specific. The sections below
 continue to describe the Claude integration; see the [Pi guide](docs/README.pi.md) for Pi storage,
 configuration, Conda setup, updates, and troubleshooting. The upstream install URL will include
 this integration only if its maintainers merge the changes.

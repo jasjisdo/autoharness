@@ -13,18 +13,29 @@ if sys.version_info < (3, 11):  # noqa: UP036 -- diagnose unsupported interprete
     print(json.dumps({"error": "autoharness requires Python 3.11+"}))
     raise SystemExit(1)
 
+from autoharness.pi_runtime import apply_config, external_environment  # noqa: E402
+
+if __name__ == "__main__":
+    scoped_environment = external_environment(os.environ)
+    os.environ.clear()
+    os.environ.update(scoped_environment)
+
 from autoharness import config  # noqa: E402
 from autoharness.hook import capture, on_session_start, on_skill_call, promoter, spawn  # noqa: E402
 from autoharness.lib import atomic, counters, layer, redact  # noqa: E402
+from autoharness.pi_paths import assert_isolated, resolve_storage_path  # noqa: E402
 from autoharness.stage_skill.server import stage  # noqa: E402
+
+if __name__ == "__main__":
+    apply_config(config)
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 
 
 def roots_for(request):
-    cwd = Path(request["cwd"]).expanduser().resolve()
+    cwd = resolve_storage_path(Path(request["cwd"]).expanduser())
     project = layer._main_worktree_root(cwd) / ".pi"
-    agent = Path(request["agent_dir"]).expanduser().resolve()
+    agent = resolve_storage_path(Path(request["agent_dir"]).expanduser())
     return {layer.PROJECT: project, layer.GLOBAL: agent}
 
 
@@ -130,8 +141,9 @@ def pi_command(job, role):
 
 def _child(job, env, payload):
     argv = pi_command(job, job["role"])
-    env = {**env, "PI_CODING_AGENT_DIR": str(job["roots"][layer.GLOBAL]),
-           "AUTOHARNESS_PI_PROJECT_ROOT": str(job["roots"][layer.PROJECT])}
+    env = {**external_environment(env), "PI_CODING_AGENT_DIR": str(job["roots"][layer.GLOBAL]),
+           "AUTOHARNESS_PI_PROJECT_ROOT": str(job["roots"][layer.PROJECT]),
+           "AUTOHARNESS_PI_CHILD_SESSION": "1", "AUTOHARNESS_PI_RUN_ID": job["run_id"]}
     timeout = max(1, int(os.environ.get("AUTOHARNESS_PI_TIMEOUT_S", "300")))
     with tempfile.TemporaryFile() as errors:
         try:
@@ -185,8 +197,10 @@ def _record_error(job, error):
 def run_worker(job):
     roots = {key: Path(value) for key, value in job["roots"].items()}
     job = {**job, "roots": roots}
+    assert_isolated(roots, job["cwd"], layer._main_worktree_root(job["cwd"]))
     def native_spawn(_argv, env, payload):
         result = _child(job, env, payload)
+        assert_isolated(roots, job["cwd"], layer._main_worktree_root(job["cwd"]))
         if result.returncode:
             _publish_error(job, f"Pi {job['role']} exited {result.returncode}: {result.stderr}")
         return result
@@ -196,6 +210,7 @@ def run_worker(job):
         return spawn.run(job["window"], job["run_id"], roots=roots, digest=job.get("digest", ""),
                          carrier="bundle", spawn_fn=native_spawn)
     except Exception as exc:
+        assert_isolated(roots, job["cwd"], layer._main_worktree_root(job["cwd"]))
         _record_error(job, exc)
         return []
 
@@ -234,6 +249,7 @@ def handle(request):
     roots = roots_for(request)
     if child and os.environ.get("AUTOHARNESS_PI_PROJECT_ROOT"):
         roots[layer.PROJECT] = Path(os.environ["AUTOHARNESS_PI_PROJECT_ROOT"])
+    assert_isolated(roots, request["cwd"], layer._main_worktree_root(request["cwd"]))
     proot = roots[layer.PROJECT]
     sid = _session_key(request)
     queue = os.environ.get(config.RUN_ID_ENV) if child else f"pi-interactive-{sid}"

@@ -76,7 +76,7 @@ def _command(cmd, record, line):
     if not argv:
         return
     rows = [{**r, "name": _clean(r.get("name"))} for r in record.get("verdicts") or []]
-    env = {**os.environ, "AUTOHARNESS_NOTIFY_SUMMARY": line, config.CHILD_SESSION_ENV: "1"}
+    env = {**os.environ, config.NOTIFY_SUMMARY_ENV: line, config.CHILD_SESSION_ENV: "1"}
     _run(argv, stdin=json.dumps({**record, "verdicts": rows}, ensure_ascii=False), env=env)
 
 

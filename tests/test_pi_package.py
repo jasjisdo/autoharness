@@ -29,8 +29,10 @@ def test_git_install_discovers_learn_command_and_skill_without_global_changes(tm
     agent = tmp_path / "agent"
     workspace = tmp_path / "workspace"
     workspace.mkdir()
-    env = {**os.environ, "PI_CODING_AGENT_DIR": str(agent), "PI_OFFLINE": "1",
-           "AUTOHARNESS_PYTHON": sys.executable}
+    env = {**{k: v for k, v in os.environ.items() if not k.startswith("AUTOHARNESS_")},
+           "HOME": str(tmp_path / "home"), "PI_CODING_AGENT_DIR": str(agent), "PI_OFFLINE": "1",
+           "AUTOHARNESS_PI_PYTHON": sys.executable}
+    env.pop("CLAUDE_CONFIG_DIR", None)
     index = int(env.get("GIT_CONFIG_COUNT", "0"))
     env.update(GIT_CONFIG_COUNT=str(index + 1))
     env[f"GIT_CONFIG_KEY_{index}"] = f"url.{snapshot.as_uri()}.insteadOf"

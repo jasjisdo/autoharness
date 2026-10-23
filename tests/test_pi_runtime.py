@@ -61,11 +61,13 @@ def test_real_pi_stages_promotes_and_reflects_with_read_only_child(tmp_path):
         "models": [{"id": "scripted", "contextWindow": 100000, "maxTokens": 2000}]}}}))
     cwd = tmp_path / "workspace"
     cwd.mkdir()
-    env = {**os.environ, "PI_CODING_AGENT_DIR": str(agent), "PI_OFFLINE": "1",
-           "AUTOHARNESS_PYTHON": sys.executable, "AUTOHARNESS_REFLECT_EVERY_N": "1",
-           "AUTOHARNESS_CONSOLIDATE_EVERY_N": "0", "AUTOHARNESS_PI_TIMEOUT_S": "20"}
+    env = {**{k: v for k, v in os.environ.items() if not k.startswith("AUTOHARNESS_")},
+           "HOME": str(tmp_path / "home"), "PI_CODING_AGENT_DIR": str(agent), "PI_OFFLINE": "1",
+           "AUTOHARNESS_PI_PYTHON": sys.executable, "AUTOHARNESS_PI_REFLECT_EVERY_N": "1",
+           "AUTOHARNESS_PI_CONSOLIDATE_EVERY_N": "0", "AUTOHARNESS_PI_TIMEOUT_S": "20"}
+    env.pop("CLAUDE_CONFIG_DIR", None)
     env.pop("AUTOHARNESS_PI_BIN", None)
-    env.pop("AUTOHARNESS_CHILD_SESSION", None)
+    env.pop("AUTOHARNESS_PI_CHILD_SESSION", None)
     try:
         proc = subprocess.run(["pi", "--print", "--mode", "json", "--no-session", "--no-extensions",
                                "-e", str(ROOT / ".pi/extensions/autoharness.ts"), "--no-mcp", "--no-skills",

@@ -17,7 +17,11 @@ def bridge():
 
 
 @pytest.fixture
-def session(tmp_path):
+def session(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("CLAUDE_CONFIG_DIR", raising=False)
     cwd = tmp_path / "repo"
     cwd.mkdir()
     return {"cwd": str(cwd), "agent_dir": str(tmp_path / "agent"), "session_id": "pi.session-1",

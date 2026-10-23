@@ -8,8 +8,14 @@ import test from 'node:test';
 const root = resolve(import.meta.dirname, '../..');
 const extension = resolve(root, '.pi/extensions/autoharness.ts');
 
-async function harness() {
+async function harness(environment = {}) {
+  const python = process.env.AUTOHARNESS_PI_PYTHON;
+  for (const key of Object.keys(process.env)) if (key.startsWith('AUTOHARNESS_')) delete process.env[key];
+  if (python) process.env.AUTOHARNESS_PI_PYTHON = python;
+  delete process.env.CLAUDE_CONFIG_DIR;
+  Object.assign(process.env, environment);
   const cwd = await realpath(await mkdtemp(resolve(tmpdir(), 'autoharness-pi-test-')));
+  process.env.HOME = resolve(cwd, 'home');
   const agentDir = resolve(cwd, 'agent');
   await mkdir(resolve(agentDir, 'skills'), { recursive: true });
   const fakePi = resolve(cwd, 'fake-pi');
@@ -89,26 +95,26 @@ test('successful reads of managed SKILL.md count use; failed reads do not', asyn
 
 test('missing Python produces visible diagnostics but does not crash session events', async () => {
   const h = await harness();
-  const previousPython = process.env.AUTOHARNESS_PYTHON;
-  process.env.AUTOHARNESS_PYTHON = '/does/not/exist/python';
+  const previousPython = process.env.AUTOHARNESS_PI_PYTHON;
+  process.env.AUTOHARNESS_PI_PYTHON = '/does/not/exist/python';
   try {
     await h.handlers.get('session_start')({}, h.ctx);
     assert.ok(h.notices.some(text => /autoharness/i.test(text)));
     const result = await h.tools.get('stage_skill').execute('call', proposal, undefined, undefined, h.ctx);
     assert.equal(result.isError, true);
   } finally {
-    if (previousPython) process.env.AUTOHARNESS_PYTHON = previousPython;
-    else delete process.env.AUTOHARNESS_PYTHON;
+    if (previousPython) process.env.AUTOHARNESS_PI_PYTHON = previousPython;
+    else delete process.env.AUTOHARNESS_PI_PYTHON;
   }
 });
 
 test('active-branch capture excludes images, private metadata and abandoned branches', async () => {
   const h = await harness();
-  const previousPython = process.env.AUTOHARNESS_PYTHON;
+  const previousPython = process.env.AUTOHARNESS_PI_PYTHON;
   const fakePython = resolve(h.cwd, 'capture-bridge');
   const capture = resolve(h.cwd, 'bridge-input.json');
   await writeFile(fakePython, '#!/usr/bin/env python3\nimport json,sys\nfrom pathlib import Path\nx=json.load(sys.stdin)\nPath(' + JSON.stringify(capture) + ').write_text(json.dumps(x))\nprint("{}")\n', { mode: 0o700 });
-  process.env.AUTOHARNESS_PYTHON = fakePython;
+  process.env.AUTOHARNESS_PI_PYTHON = fakePython;
   const previousPi = process.env.AUTOHARNESS_PI_BIN;
   delete process.env.AUTOHARNESS_PI_BIN;
   h.ctx.sessionManager.getBranch = () => [
@@ -126,19 +132,30 @@ test('active-branch capture excludes images, private metadata and abandoned bran
     assert.deepEqual(JSON.parse(payload).pi_command, ['pi']);
   } finally {
     if (previousPi) process.env.AUTOHARNESS_PI_BIN = previousPi;
-    if (previousPython) process.env.AUTOHARNESS_PYTHON = previousPython;
-    else delete process.env.AUTOHARNESS_PYTHON;
+    if (previousPython) process.env.AUTOHARNESS_PI_PYTHON = previousPython;
+    else delete process.env.AUTOHARNESS_PI_PYTHON;
   }
 });
 
 test('child sessions expose only staging and enforce a fail-closed tool allowlist', async () => {
-  process.env.AUTOHARNESS_CHILD_SESSION = '1';
   try {
-    const h = await harness();
+    const h = await harness({ AUTOHARNESS_PI_CHILD_SESSION: '1' });
     assert.deepEqual([...h.tools.keys()], ['stage_skill']);
     assert.equal(h.handlers.has('agent_settled'), false);
     assert.equal(h.commands.size, 0);
     assert.equal((await h.handlers.get('tool_call')({ toolName: 'bash' }, h.ctx)).block, true);
     assert.equal(await h.handlers.get('tool_call')({ toolName: 'read' }, h.ctx), undefined);
-  } finally { delete process.env.AUTOHARNESS_CHILD_SESSION; }
+  } finally { delete process.env.AUTOHARNESS_PI_CHILD_SESSION; }
+});
+
+test('generic Claude markers and Python settings cannot disable or redirect native Pi', async () => {
+  const h = await harness({ AUTOHARNESS_CHILD_SESSION: '1', AUTOHARNESS_DISABLE_GLOBAL: '1',
+    AUTOHARNESS_PYTHON: '/does/not/exist/claude-python', AUTOHARNESS_PROJECT_ROOT: '/foreign' });
+  assert.ok(h.commands.has('learn'));
+  await h.handlers.get('session_start')({}, h.ctx);
+  const result = await h.tools.get('stage_skill').execute('call', { ...proposal, level: 'global' }, undefined, undefined, h.ctx);
+  assert.equal(result.isError, false);
+  await h.handlers.get('agent_settled')({}, h.ctx);
+  assert.match(await readFile(resolve(h.agentDir, 'skills/test-workflow/SKILL.md'), 'utf8'), /Run focused/);
+  assert.equal(h.notices.filter(text => /Python.*required|ENOENT/.test(text)).length, 0);
 });
