@@ -56,7 +56,7 @@
 - [x] Add Node tests to CI without changing existing Python checks.
 - [x] Perform an actual local-git package installation using isolated Pi configuration; inspect loaded resources with real Pi RPC.
 - [x] Run full test suites, lint and documentation link check; review the diff separately.
-- [ ] Commit verified changes.
+- [x] Commit verified changes (`d04e6bb`, native Pi integration).
 - [ ] Publish to the fork after obtaining push permission; the installed GitHub account currently has pull-only access (HTTP 403 on push dry-run).
 
 ## Execution ledger
@@ -72,4 +72,4 @@
 - Final review: self-review (no subagent tool). Review fixes: exclude unrelated message metadata and nested image payloads; avoid invoking arbitrary embedding scripts as Pi; surface detached-worker errors at the next session start. Each behavior has regression coverage observed failing before its fix.
 - Ruling: workers use the parent's ordinary Pi provider configuration, not private in-memory SDK credentials or unrelated provider extensions. Those nontransferable configurations fail visibly instead of enabling extra child code; this limitation is documented.
 - Verification: 706 Python tests passed, one existing paid/live test deselected; seven Node tests passed; TypeScript, ruff and documentation links passed. Remote CI execution is not claimed.
-- Publication: GitHub API reports `push: false`; `git push --dry-run fork HEAD:main` returns HTTP 403. No remote branch was changed.
+- Publication: GitHub API reports `push: false`; `git push --dry-run fork HEAD:main` returns HTTP 403. No remote branch was changed. Goal execution must pause for authentication by an account with write permission before publishing; the public fork command is not yet claimed to install these changes.
